@@ -3,9 +3,9 @@
 ! =========================================
 ! 
 ! ## Usage
-!   Configuration data is acceptable in either of pipe, redirect
-!   1. pipe:     `cat config.in | ./dhva.x`
-!   2. redirect: `./dhva.x < config.in`
+!   Configuration data is acceptable in either of pipe or redirect
+!   1. pipe:     `cat config.in | ./BtoJ.x`
+!   2. redirect: `./BtoJ.x < config.in`
 !
 ! ## Instruction of the format
 !   1.  <keyword> and <parameter> should be separated by either of '=', ':' or ' '
@@ -39,7 +39,7 @@
 ! -----------------------------------------
 !  Calculation configuration
 ! -----------------------------------------
-    sc_thickness      = 2 ! micro m
+    sc_thickness      = 2 ! micro meter
       ! Thickness of superconducting layer in units of micrometer.
       ! real: 2(default)
 
@@ -71,7 +71,7 @@
     output_J          = true
       ! logical: true (default)
 
-    output_dir        = '/Users/hishiro/Dropbox/Documents/Laboratory/TapeStar/'
+    output_dir        = './'
       ! char: './' (default)
     
     output_postfix_Jx = '_Jx.dat'
