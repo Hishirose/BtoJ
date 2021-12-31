@@ -10,7 +10,7 @@ DEST    := /usr/local/bin
 
 # For use of large stack memory, add '-Wl,-stack_size,0x40000000,-stack_addr,0xf0000000'
 # For debug, replace '-O3' with '-O0 -g -Wall -fbounds-check'
-# When using LAPACK in MacOS, add following flag to FFLAGS (NOTE: In current version, LAPACK is not used)
+# When using LAPACK in MacOS, add following flag to FFLAGS (NOTE: In current version, LAPACK is used)
 # -framework Accelerate
 FFLAGS  := -O3 -framework Accelerate \
            -fbacktrace -ffpe-summary=none \
