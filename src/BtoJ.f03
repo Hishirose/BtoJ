@@ -25,9 +25,9 @@ program BtoJ
   if (state_cmd_args == 3) call test()
 
   write(stdout, '(a)') '# ' // trim(name_of_program) // ' version ' // trim(version) // ' - standard output'
-  write(stdout, '(4x, a)') 'Executed at ' // datetime_now()
+  write(stdout, '("#", 3x, a)') 'Executed at ' // datetime_now()
   call execute_shell_command('pwd', pwd)
-  write(stdout, '(4x, a)') 'Working dir = ' // '''' // pwd // ''''
+  write(stdout, '("#", 3x, a)') 'Working dir = ' // '''' // pwd // ''''
 
   write(stdout, *)
   write(stdout, '(a)') '# Initialization'
@@ -55,11 +55,14 @@ program BtoJ
   endif
   call cpu_time(cpu_time0)
   call read_config()
+  write(stdout, '(4x, "End of configuration")')
+  write(stdout, *)
 
   call load_Bmap_file()
 
+  write(stdout, '("# Calculation")')
   call calc_x_interval()
-  write(stdout, '(4x, "x_interval", 10x, "= ", g0)') x_interval
+  write(stdout, '(4x, "x_interval", 10x, "= ", g0)') x_interval * 1.0e3
 
   call cpu_time(cpu_time1)
   call interpolate_B_along_y()
