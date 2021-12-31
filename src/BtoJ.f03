@@ -9,13 +9,13 @@ program BtoJ
   use omp_lib
   use constants,   only : dp, i4b, maxlen, stdout, datetime_now, name_of_program, version
   use utils,       only : report_error, secs2str, execute_shell_command, int2char
-  use io_data,     only : parse_cmd_args, read_config, load_Bmap_file, calc_x_interval, write_data
-  use calc,        only : interpolate_B_along_y, obtain_Jx_Jy_by_inverse, calc_J_tot
+  use io_data,     only : parse_cmd_args, read_config, load_Bmap_file, calc_x_interval, write_data, x_interval
+  use calc,        only : interpolate_B_along_y, obtain_Jx_Jy_by_inverse, calc_J_tot, calc_invG
 
   implicit none
 
   integer(i4b)              :: io_error, is, calc_step, state_cmd_args, stdin_type
-  real(dp)                  :: cpu_time1, cpu_time2
+  real(dp)                  :: cpu_time0, cpu_time1, cpu_time2
   character(:), allocatable :: pwd, stdin_check
 
   ! Check command line arguments
@@ -53,23 +53,35 @@ program BtoJ
     call report_error('main', &
          & 'Configuration data seems to be passed in more than one way (' // int2char(stdin_type) // ').')
   endif
-  call cpu_time(cpu_time1)
+  call cpu_time(cpu_time0)
   call read_config()
 
   call load_Bmap_file()
 
   call calc_x_interval()
+  write(stdout, '(4x, "x_interval", 10x, "= ", g0)') x_interval
 
+  call cpu_time(cpu_time1)
   call interpolate_B_along_y()
+  call cpu_time(cpu_time2)
+  write(stdout, '(4x, "interpolation is done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time1))
 
+  call cpu_time(cpu_time1)
+  call calc_invG()
+  call cpu_time(cpu_time2)
+  write(stdout, '(4x, "calculation of invG is done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time1))
+
+  call cpu_time(cpu_time1)
   call obtain_Jx_Jy_by_inverse()
+  call cpu_time(cpu_time2)
+  write(stdout, '(4x, "calculation of Jx, Jy is done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time1))
 
   call calc_J_tot()
 
   call write_data()
 
   call cpu_time(cpu_time2)
-  write(stdout, '(4x, "done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time1))
+  write(stdout, '(4x, "done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time0))
 
 
 

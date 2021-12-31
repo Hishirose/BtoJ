@@ -10,7 +10,7 @@ module calc
   public  :: interpolate_B_along_y
   public  :: obtain_Jx_Jy_by_inverse
   public  :: calc_J_tot
-  private :: calc_invG
+  public  :: calc_invG
   private :: obtain_Mz_by_inverse_mini
   private :: diff_2d
 
@@ -60,7 +60,6 @@ module calc
     n = ceiling(dble(nx) / step)
     allocate(Mz_block(ny, ny, n), Mz(ny, nx))
 
-    call calc_invG(ny)
     !$omp parallel do private(i), shared(ny, step, Bmap_interp, Mz_block)
     do i = 1, n - 1
       call obtain_Mz_by_inverse_mini(Bmap_interp(1:ny, (i - 1) * step + 1: (i - 1) * step + ny), Mz_block(:, :, i))
@@ -80,9 +79,9 @@ module calc
           &  Mz_block(:, j, i + 1) * (1.0d0 - fermi_dirac((j - 1) / dble(n_overlap - 1), beta = 10.0d0)))
     end do
     do i = 1, n_overlap
-      Mz(:, (n - 1) * step + ny - n_overlap + i) = &
+      Mz(:, (n - 2) * step + ny - n_overlap + i) = &
         & (Mz_block(:, ny - n_overlap + i, n - 1) * fermi_dirac((i - 1) / dble(n_overlap - 1), beta = 10.0d0) + &
-        &  Mz_block(:, ((n - 1) * step + ny - n_overlap + i) - (nx - ny), n) &
+        &  Mz_block(:, ((n - 2) * step + ny - n_overlap + i) - (nx - ny), n) &
         &* (1.0d0 - fermi_dirac((i - 1) / dble(n_overlap - 1), beta = 10.0d0)))
     end do
 
@@ -91,6 +90,7 @@ module calc
     forall(i = 1:ny, j = 1:nx) Jx(i, j) = diff_2d(Mz, 1, x_interval, y_interval_interp, j, i) * inv_sc_thickness
     forall(i = 1:ny, j = 1:nx) Jy(i, j) = -diff_2d(Mz, 2, x_interval, y_interval_interp, j, i) * inv_sc_thickness
 
+!Jx = Mz
   end subroutine obtain_Jx_Jy_by_inverse
 
   subroutine calc_J_tot()
@@ -100,16 +100,17 @@ module calc
     J_tot(:, :) = sqrt(Jx(:, :)**2 + Jy(:, :)**2)
   end subroutine calc_J_tot
 
-  subroutine calc_invG(n)
-    use io_data, only : sc_thickness, dz, y_interval_interp, x_interval, invG
+  subroutine calc_invG()
+    use io_data, only : sc_thickness, dz, y_interval_interp, x_interval, invG, Bmap_interp
     use algebra, only : mat_inv
     implicit none
 
-    integer(i4b), intent(in) :: n
-    integer(i4b)             :: i, j, k, l
-    real(dp), allocatable    :: G(:, :)
-    real(dp)                 :: r, dxy, inv_sc_thickness
+    integer(i4b)          :: n
+    integer(i4b)          :: i, j, k, l
+    real(dp), allocatable :: G(:, :)
+    real(dp)              :: r, dxy, inv_sc_thickness
 
+    n = ubound(Bmap_interp, 1)
     allocate(G(n * n, n * n), invG(n * n, n * n))
 
     ! B(y, x)

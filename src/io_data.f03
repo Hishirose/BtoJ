@@ -451,7 +451,7 @@ contains
     end if
 
 !    write(format_str, '("(4x, ""+ "", a, ", i0, "x, ""= "", g0, a)")') max(1, 28 - len(trim(keyword)))
-    write(format_str, '("(4x, a, ", i0, "x, ""= "", g0, a)")') max(1, 28 - len(trim(keyword)))
+    write(format_str, '("(4x, a, ", i0, "x, ""= "", g0, a)")') max(1, 20 - len(trim(keyword)))
     if (present(rvar)) write(stdout, format_str) trim(keyword), rvar, trim(comment_part)
     if (present(ivar)) write(stdout, format_str) trim(keyword), ivar, trim(comment_part)
     if (present(lvar)) write(stdout, format_str) trim(keyword), lvar, trim(comment_part)
