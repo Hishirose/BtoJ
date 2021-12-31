@@ -1,0 +1,100 @@
+! =========================================
+! # configuraiton file for BtoJ.x
+! =========================================
+! 
+! ## Usage
+!   Configuration data is acceptable in either of pipe, redirect
+!   1. pipe:     `cat config.in | ./dhva.x`
+!   2. redirect: `./dhva.x < config.in`
+!
+! ## Instruction of the format
+!   1.  <keyword> and <parameter> should be separated by either of '=', ':' or ' '
+!   2.  <parameter> is one of integer (int), real number (real), or character (char),
+!       and some <parameter> is array or matrix
+!   3.  Characters after '!' or '#' are neglected as a comment
+!   4.  Character value can be quoted, but not required
+!   5.  Logical expression can be 't' or 'f' or any text that contains either of them, but do not contain both
+!   6.  One line is limited up to 1024 characters; be careful especially when using long path
+!   7.  <keyword> is case-insensitive
+!   8.  Line with undefined <keyword> is neglected; be careful for miss-spelling
+!   9.  Tab characters (ascii: 0x0A) are converted to single space characters (ascii: 0x20)
+!   10. Undefined <parameter> has its own default value
+!   11. Any <parameter> can be overwritten by command line argument
+!       Example1: `./BtoJ.x --keyword=8 < config.in`
+!       Example2: `./BtoJ.x --keyword 8 < config.in`
+!   12. Lines after 'end of configuration' are discarded
+!
+
+! -----------------------------------------
+!  System configuration
+! -----------------------------------------
+    verbose           = 2
+      ! int: 1(default)                      0 1 2
+      ! configuration parameter (specified): N Y Y
+      ! configuration parameter (default)  : N N Y
+
+    b_map_file_path   = './test.dat'
+      ! char: 'input.dat'(default)
+
+! -----------------------------------------
+!  Calculation configuration
+! -----------------------------------------
+    sc_thickness      = 2 ! micro m
+      ! Thickness of superconducting layer in units of micrometer.
+      ! real: 2(default)
+
+    dz                = 0.1 ! mm
+      ! Distance of Hall probe measured from the surface of the superconducting layer
+      ! real: 0.1(default)
+
+    y_interval        = 0.6 ! mm
+      ! Interval of Hall sensors in units of mm.
+      ! real: 0.6(default)
+
+    y_interval_interp = 0.2 ! mm
+      ! Interval of y points after 3d interpolation in units of mm.
+      ! real: 0.2(default)
+
+    n_overlap         = 8 ! points
+      ! Number of x points to overlap when operating block calculation of J.
+      ! integer: 2(default)
+
+! -----------------------------------------
+!  Output configuration
+! -----------------------------------------
+    prefix            = 'test'
+      ! char: 'output'(default) Used in a name of output files
+
+    output_Jx_Jy      = false
+      ! logical: false (default)
+    
+    output_J          = true
+      ! logical: true (default)
+
+    output_dir        = '/Users/hishiro/Dropbox/Documents/Laboratory/TapeStar/'
+      ! char: './' (default)
+    
+    output_postfix_Jx = '_Jx.dat'
+      ! char: '_Jx.dat' (default)
+      ! The name of output file is prefix + postfix.
+
+    output_postfix_Jy = '_Jy.dat'
+      ! char: '_Jy.dat' (default)
+      ! The name of output file is prefix + postfix.
+
+    output_postfix_J  = '_J.dat'
+      ! char: '_J.dat' (default)
+      ! The name of output file is prefix + postfix.
+
+    separator                = ',\t'
+      ! char: ',\t' (default)
+      ! Each value in the output file is separated by this character set.
+      ! '\t' is replaced with tab (char(9))
+      ! '\s' is replaced with space (char(32))
+
+End of configuration
+
+
+
+
+
