@@ -86,7 +86,7 @@
       ! char: '_J.dat' (default)
       ! The name of output file is prefix + postfix.
 
-    separator                = ',\t'
+    separator         = ',\t'
       ! char: ',\t' (default)
       ! Each value in the output file is separated by this character set.
       ! '\t' is replaced with tab (char(9))
