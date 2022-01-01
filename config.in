@@ -55,13 +55,13 @@
       ! Interval of y points after 3d interpolation in units of mm.
       ! real: 0.2(default)
 
-    n_overlap         = 8 ! points
+    n_overlap         = 12 ! points
       ! Number of x points to overlap when operating block calculation of J.
       ! integer: 2(default)
 
-    f_d_factor        = 2.0
+    f_d_factor        = 20.0
       ! Factor of Fermi-Dirac function used in smoothly connecting adjacent blocks.
-      ! real: 2.0(default)
+      ! real: 20.0(default)
 
     external_field    = 0.00 ! T
       ! External field used in the measurement of TapeStar.
