@@ -112,7 +112,7 @@ contains
     call write_keyword_var('y_interval_interp', found, rvar = y_interval_interp)
     y_interval_interp = y_interval_interp * 0.001d0 ! in units of m
 
-    n_overlap = 12
+    n_overlap = 2
     call read_keyword_var('n_overlap', found, ivar = n_overlap)
     call write_keyword_var('n_overlap', found, ivar = n_overlap)
 

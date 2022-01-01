@@ -58,8 +58,8 @@ module calc
 
     ny = ubound(Bmap_interp, 1)
     nx = ubound(Bmap_interp, 2)
-    step = ny - n_overlap * 2
-    n = ceiling(dble(nx - n_overlap * 2) / step)
+    step = ny - n_overlap
+    n = ceiling(dble(nx - n_overlap) / step)
     allocate(Mz_block(ny, ny, n), Mz(ny, nx))
 
     Bmap_interp = Bmap_interp - external_field
@@ -67,8 +67,7 @@ module calc
     if (verbose > 1) write(stdout, '(4x, "allocation is done")'); flush(stdout)
     !$omp parallel do private(i), shared(ny, step, Bmap_interp, Mz_block)
     do i = 1, n - 1
-      call obtain_Mz_by_inverse_mini(Bmap_interp(1:ny, n_overlap + (i - 1) * step + 1: &
-           & n_overlap + (i - 1) * step + ny), Mz_block(:, :, i))
+      call obtain_Mz_by_inverse_mini(Bmap_interp(1:ny, (i - 1) * step + 1: (i - 1) * step + ny), Mz_block(:, :, i))
     end do
     !$omp end parallel do
     call obtain_Mz_by_inverse_mini(Bmap_interp(1:ny, nx - ny + 1: nx), Mz_block(:, :, n))
@@ -79,20 +78,20 @@ module calc
     Mz(:, nx - ny + 1:nx) = Mz_block(:, :, n)
     if (verbose > 1) write(stdout, '(4x, "connection of blocks (1st step) is done")'); flush(stdout)
     do i = 1, n - 1
-      Mz(:, n_overlap + (i - 1) * step + 1 : n_overlap + i * step + 1) = Mz_block(:, n_overlap + 1: ny - n_overlap, i)
+      Mz(:, n_overlap + (i - 1) * step + 1 : i * step) = Mz_block(:, n_overlap + 1: ny - n_overlap, i)
     end do
     if (verbose > 1) write(stdout, '(4x, "connection of blocks (2nd step) is done")'); flush(stdout)
     do i = 1, n - 2
-      forall(j = 1:n_overlap) Mz(:, n_overlap + i * step + j) = &
+      forall(j = 1:n_overlap) Mz(:, i * step + j) = &
           & (Mz_block(:, ny - n_overlap + j, i) * fermi_dirac((j - 1) / dble(n_overlap - 1), beta = f_d_factor) + &
-          &  Mz_block(:, j, i + 1) * (1.0d0 - fermi_dirac((j - 1) / dble(n_overlap - 1), beta = f_d_factor)))
+          &  Mz_block(:, j, i + 1) * fermi_dirac((n_overlap - j) / dble(n_overlap - 1), beta = f_d_factor))
     end do
     if (verbose > 1) write(stdout, '(4x, "connection of blocks (3rd step) is done")'); flush(stdout)
     do i = 1, n_overlap
-      Mz(:, n_overlap + (n - 1) * step + i) = &
+      Mz(:, (n - 1) * step + i) = &
         & (Mz_block(:, ny - n_overlap + i, n - 1) * fermi_dirac((i - 1) / dble(n_overlap - 1), beta = f_d_factor) + &
-        &  Mz_block(:, (n_overlap + (n - 1) * step + i) - (nx - ny), n) &
-        &* (1.0d0 - fermi_dirac((i - 1) / dble(n_overlap - 1), beta = f_d_factor)))
+        &  Mz_block(:, ((n - 1) * step + i) - (nx - ny), n) &
+        &* fermi_dirac((n_overlap - i) / dble(n_overlap - 1), beta = f_d_factor))
     end do
     if (verbose > 1) write(stdout, '(4x, "connection of blocks (4th step) is done")'); flush(stdout)
 
@@ -101,7 +100,7 @@ module calc
     forall(i = 1:ny, j = 1:nx) Jx(i, j) = diff_2d(Mz, 1, x_interval, y_interval_interp, j, i) * inv_sc_thickness
     forall(i = 1:ny, j = 1:nx) Jy(i, j) = -diff_2d(Mz, 2, x_interval, y_interval_interp, j, i) * inv_sc_thickness
 
-!Jx = Mz
+! Jx = Mz
   end subroutine obtain_Jx_Jy_by_inverse
 
   subroutine calc_J_tot()
