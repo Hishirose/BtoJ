@@ -59,6 +59,15 @@
       ! Number of x points to overlap when operating block calculation of J.
       ! integer: 2(default)
 
+    f_d_factor        = 2.0
+      ! Factor of Fermi-Dirac function used in smoothly connecting adjacent blocks.
+      ! real: 2.0(default)
+
+    external_field    = 0.00 ! T
+      ! External field used in the measurement of TapeStar.
+      ! real: 0.00(default)
+
+
 ! -----------------------------------------
 !  Output configuration
 ! -----------------------------------------

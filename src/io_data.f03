@@ -25,6 +25,8 @@ module io_data
   real(dp),                public, save :: y_interval
   real(dp),                public, save :: y_interval_interp
   integer(i4b),            public, save :: n_overlap
+  real(dp),                public, save :: f_d_factor
+  real(dp),                public, save :: external_field
 
   ! -----------------------------------------
   !  Output configuration
@@ -100,12 +102,12 @@ contains
     call write_keyword_var('dz', found, rvar = dz)
     dz = dz * 0.001d0 ! in units of m
 
-    y_interval = 0.6
+    y_interval = 0.6d0
     call read_keyword_var('y_interval', found, rvar = y_interval)
     call write_keyword_var('y_interval', found, rvar = y_interval)
     y_interval = y_interval * 0.001d0 ! in units of m
 
-    y_interval_interp = 0.2
+    y_interval_interp = 0.2d0
     call read_keyword_var('y_interval_interp', found, rvar = y_interval_interp)
     call write_keyword_var('y_interval_interp', found, rvar = y_interval_interp)
     y_interval_interp = y_interval_interp * 0.001d0 ! in units of m
@@ -113,6 +115,14 @@ contains
     n_overlap = 2
     call read_keyword_var('n_overlap', found, ivar = n_overlap)
     call write_keyword_var('n_overlap', found, ivar = n_overlap)
+
+    f_d_factor = 2.0d0
+    call read_keyword_var('f_d_factor', found, rvar = f_d_factor)
+    call write_keyword_var('f_d_factor', found, rvar = f_d_factor)
+
+    external_field = 0.00d0 ! T
+    call read_keyword_var('external_field', found, rvar = external_field)
+    call write_keyword_var('external_field', found, rvar = external_field)
 
   ! -----------------------------------------
   !  Output configuration
