@@ -37,7 +37,7 @@ contains
     integer(i8b)  :: sys_time(8), Zeller, month_shift
     character(35) :: datetime_now
     character(3)  :: weekdays(0 : 6) = &
-      & (/'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'/)
+      & (/'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'/)
     character(7)  :: month(12) = &
       & (/'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', &
       &   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'/)
