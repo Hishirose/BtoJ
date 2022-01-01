@@ -98,17 +98,17 @@ contains
     dz = 2
     call read_keyword_var('dz', found, rvar = dz)
     call write_keyword_var('dz', found, rvar = dz)
-    dz = dz * 0.001
+    dz = dz * 0.001d0 ! in units of m
 
     y_interval = 0.6
     call read_keyword_var('y_interval', found, rvar = y_interval)
     call write_keyword_var('y_interval', found, rvar = y_interval)
-    y_interval = y_interval * 0.001
+    y_interval = y_interval * 0.001d0 ! in units of m
 
     y_interval_interp = 0.2
     call read_keyword_var('y_interval_interp', found, rvar = y_interval_interp)
     call write_keyword_var('y_interval_interp', found, rvar = y_interval_interp)
-    y_interval_interp = y_interval_interp * 0.001
+    y_interval_interp = y_interval_interp * 0.001d0 ! in units of m
 
     n_overlap = 2
     call read_keyword_var('n_overlap', found, ivar = n_overlap)
@@ -550,7 +550,7 @@ contains
     nx = ubound(xpos, 1)
     allocate(diff_xpos(nx - 1))
     forall(i = 1:nx) diff_xpos(i) = xpos(i + 1) - xpos(i)
-    x_interval = sum(diff_xpos) / (nx - 1) * 1.0e-3
+    x_interval = sum(diff_xpos) / (nx - 1) * 1.0e-3 ! in units of m
 
   end subroutine calc_x_interval
 

@@ -45,8 +45,9 @@ module calc
   end subroutine interpolate_B_along_y
 
   subroutine obtain_Jx_Jy_by_inverse()
-    use io_data, only : n_overlap, Bmap_interp, Jx, Jy, sc_thickness, y_interval_interp, x_interval
-    use algebra, only : fermi_dirac
+    use constants, only : stdout
+    use io_data, only   : n_overlap, Bmap_interp, Jx, Jy, sc_thickness, y_interval_interp, x_interval, verbose
+    use algebra, only   : fermi_dirac
     implicit none
 
     integer(i4b)          :: ny, nx, n
@@ -60,12 +61,14 @@ module calc
     n = ceiling(dble(nx) / step)
     allocate(Mz_block(ny, ny, n), Mz(ny, nx))
 
+    if (verbose > 1) write(stdout, '(4x, "allocation is done")')
     !$omp parallel do private(i), shared(ny, step, Bmap_interp, Mz_block)
     do i = 1, n - 1
       call obtain_Mz_by_inverse_mini(Bmap_interp(1:ny, (i - 1) * step + 1: (i - 1) * step + ny), Mz_block(:, :, i))
     end do
     !$omp end parallel do
     call obtain_Mz_by_inverse_mini(Bmap_interp(1:ny, nx - ny + 1: nx), Mz_block(:, :, n))
+    if (verbose > 1) write(stdout, '(4x, "calculation of Mz is done")')
 
     ! Connect calculated Jx,Jy blocks
     Mz(:, 1:n_overlap) = Mz_block(:, 1:n_overlap, 1)
@@ -84,11 +87,13 @@ module calc
         &  Mz_block(:, ((n - 2) * step + ny - n_overlap + i) - (nx - ny), n) &
         &* (1.0d0 - fermi_dirac((i - 1) / dble(n_overlap - 1), beta = 10.0d0)))
     end do
+    if (verbose > 1) write(stdout, '(4x, "connection of blocks is done")')
 
     ! Calculate Jx, Jy from Mz
     inv_sc_thickness = 1 / sc_thickness * 1e3
     forall(i = 1:ny, j = 1:nx) Jx(i, j) = diff_2d(Mz, 1, x_interval, y_interval_interp, j, i) * inv_sc_thickness
     forall(i = 1:ny, j = 1:nx) Jy(i, j) = -diff_2d(Mz, 2, x_interval, y_interval_interp, j, i) * inv_sc_thickness
+    if (verbose > 1) write(stdout, '(4x, "calculations of Jx and Jy is done")')
 
 !Jx = Mz
   end subroutine obtain_Jx_Jy_by_inverse
