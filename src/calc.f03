@@ -165,10 +165,10 @@ pure function diff_2d(map, d, dx, dy, px, py) result(slope)
     real(dp)                 :: slope
     integer(i4b)             :: n
 
-    n = ubound(map, 1)
 
     if (d == 1) then ! y
-      if (py > 1 .and. py < n - 1) then
+      n = ubound(map, 1)
+      if (py > 1 .and. py < n) then
         slope = (map(py + 1, px) - map(py - 1, px)) / (2.0d0 * dy)
       else if (py > 1) then
         slope = (map(py, px) - map(py - 1, px)) / dy
@@ -176,7 +176,8 @@ pure function diff_2d(map, d, dx, dy, px, py) result(slope)
         slope = (map(py + 1, px) - map(py, px)) / dy
       end if
     else if (d == 2) then ! x
-      if (px > 1 .and. px < n - 1) then
+      n = ubound(map, 2)
+      if (px > 1 .and. px < n) then
         slope = (map(py, px + 1) - map(py, px - 1)) / (2.0d0 * dx)
       else if (px > 1) then
         slope = (map(py, px) - map(py, px - 1)) / dx
