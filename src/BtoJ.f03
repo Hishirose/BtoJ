@@ -3,6 +3,10 @@
 ! This file is distributed under the terms of the GNU general public license.
 ! See http://www.gnu.org/copyleft/gpl.txt .
 !
+! A part of this program uses the algorithm described in
+! W. Xing, B. Heinrich, H. Zhou, A. A. Fife, and A. R. Cragg, Journal of Applied Physics 76, 4244 (1994)
+! https://doi.org/10.1063/1.357308
+!
 
 program BtoJ
 
@@ -54,30 +58,37 @@ program BtoJ
          & 'Configuration data seems to be passed in more than one way (' // int2char(stdin_type) // ').')
   endif
   call cpu_time(cpu_time0)
+  flush(stdout)
   call read_config()
   write(stdout, '(4x, "End of configuration")')
   write(stdout, *)
+  flush(stdout)
 
   call load_Bmap_file()
 
   write(stdout, '("# Calculation")')
+  flush(stdout)
   call calc_x_interval()
   write(stdout, '(4x, "x_interval", 10x, "= ", g0)') x_interval * 1.0e3
+  flush(stdout)
 
   call cpu_time(cpu_time1)
   call interpolate_B_along_y()
   call cpu_time(cpu_time2)
   write(stdout, '(4x, "interpolation is done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time1))
+  flush(stdout)
 
   call cpu_time(cpu_time1)
   call calc_invG()
   call cpu_time(cpu_time2)
   write(stdout, '(4x, "calculation of invG is done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time1))
+  flush(stdout)
 
   call cpu_time(cpu_time1)
   call obtain_Jx_Jy_by_inverse()
   call cpu_time(cpu_time2)
   write(stdout, '(4x, "calculation of Jx, Jy is done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time1))
+  flush(stdout)
 
   call calc_J_tot()
 
@@ -85,6 +96,7 @@ program BtoJ
 
   call cpu_time(cpu_time2)
   write(stdout, '(4x, "done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time0))
+  flush(stdout)
 
 
 
