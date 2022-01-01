@@ -20,8 +20,8 @@
 !   9.  Tab characters (ascii: 0x0A) are converted to single space characters (ascii: 0x20)
 !   10. Undefined <parameter> has its own default value
 !   11. Any <parameter> can be overwritten by command line argument
-!       Example1: `./BtoJ.x --keyword=8 < config.in`
-!       Example2: `./BtoJ.x --keyword 8 < config.in`
+!       Example1: `BtoJ.x --keyword=8 < config.in`
+!       Example2: `BtoJ.x --keyword 8 < config.in`
 !   12. Lines after 'end of configuration' are discarded
 !
 
