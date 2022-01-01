@@ -46,7 +46,8 @@ module calc
 
   subroutine obtain_Jx_Jy_by_inverse()
     use constants, only : stdout
-    use io_data, only   : n_overlap, Bmap_interp, Jx, Jy, sc_thickness, y_interval_interp, x_interval, verbose
+    use io_data, only   : n_overlap, Bmap_interp, Jx, Jy, sc_thickness, y_interval_interp, &
+                        & x_interval, verbose, external_field, f_d_factor
     use algebra, only   : fermi_dirac
     implicit none
 
@@ -60,6 +61,8 @@ module calc
     step = ny - n_overlap * 2
     n = ceiling(dble(nx - n_overlap * 2) / step)
     allocate(Mz_block(ny, ny, n), Mz(ny, nx))
+
+    Bmap_interp = Bmap_interp - external_field
 
     if (verbose > 1) write(stdout, '(4x, "allocation is done")'); flush(stdout)
     !$omp parallel do private(i), shared(ny, step, Bmap_interp, Mz_block)
@@ -81,15 +84,15 @@ module calc
     if (verbose > 1) write(stdout, '(4x, "connection of blocks (2nd step) is done")'); flush(stdout)
     do i = 1, n - 2
       forall(j = 1:n_overlap) Mz(:, n_overlap + i * step + j) = &
-          & (Mz_block(:, ny - n_overlap + j, i) * fermi_dirac((j - 1) / dble(n_overlap - 1), beta = 10.0d0) + &
-          &  Mz_block(:, j, i + 1) * (1.0d0 - fermi_dirac((j - 1) / dble(n_overlap - 1), beta = 10.0d0)))
+          & (Mz_block(:, ny - n_overlap + j, i) * fermi_dirac((j - 1) / dble(n_overlap - 1), beta = f_d_factor) + &
+          &  Mz_block(:, j, i + 1) * (1.0d0 - fermi_dirac((j - 1) / dble(n_overlap - 1), beta = f_d_factor)))
     end do
     if (verbose > 1) write(stdout, '(4x, "connection of blocks (3rd step) is done")'); flush(stdout)
     do i = 1, n_overlap
       Mz(:, n_overlap + (n - 1) * step + i) = &
-        & (Mz_block(:, ny - n_overlap + i, n - 1) * fermi_dirac((i - 1) / dble(n_overlap - 1), beta = 10.0d0) + &
+        & (Mz_block(:, ny - n_overlap + i, n - 1) * fermi_dirac((i - 1) / dble(n_overlap - 1), beta = f_d_factor) + &
         &  Mz_block(:, (n_overlap + (n - 1) * step + i) - (nx - ny), n) &
-        &* (1.0d0 - fermi_dirac((i - 1) / dble(n_overlap - 1), beta = 10.0d0)))
+        &* (1.0d0 - fermi_dirac((i - 1) / dble(n_overlap - 1), beta = f_d_factor)))
     end do
     if (verbose > 1) write(stdout, '(4x, "connection of blocks (4th step) is done")'); flush(stdout)
 
