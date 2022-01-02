@@ -3,7 +3,7 @@
 ! =========================================
 ! 
 ! ## Usage
-!   Configuration data is acceptable in either of pipe or redirect
+!   Configuration data is acceptable in either of pipe, redirect
 !   1. pipe:     `cat config.in | BtoJ.x`
 !   2. redirect: `BtoJ.x < config.in`
 !
@@ -20,8 +20,8 @@
 !   9.  Tab characters (ascii: 0x0A) are converted to single space characters (ascii: 0x20)
 !   10. Undefined <parameter> has its own default value
 !   11. Any <parameter> can be overwritten by command line argument
-!       Example1: `BtoJ.x --keyword=8 < config.in`
-!       Example2: `BtoJ.x --keyword 8 < config.in`
+!       Example1: `./BtoJ.x --keyword=8 < config.in`
+!       Example2: `./BtoJ.x --keyword 8 < config.in`
 !   12. Lines after 'end of configuration' are discarded
 !
 
@@ -33,7 +33,7 @@
       ! configuration parameter (specified): N Y Y
       ! configuration parameter (default)  : N N Y
 
-    b_map_file_path   = './test.dat'
+    b_map_file_path   = './test_xy-B.dat'
       ! char: 'input.dat'(default)
 
 ! -----------------------------------------
@@ -55,7 +55,7 @@
       ! Interval of y points after 3d interpolation in units of mm.
       ! real: 0.2(default)
 
-    n_overlap         = 12 ! points
+    n_overlap         = 8 ! points
       ! Number of x points to overlap when operating block calculation of J.
       ! integer: 2(default)
 
@@ -63,22 +63,20 @@
       ! Factor of Fermi-Dirac function used in smoothly connecting adjacent blocks.
       ! real: 20.0(default)
 
-    external_field    = 0.00 ! T
-      ! External field used in the measurement of TapeStar.
-      ! real: 0.00(default)
-
-
 ! -----------------------------------------
 !  Output configuration
 ! -----------------------------------------
-    prefix            = 'test'
+    prefix            = 'output'
       ! char: 'output'(default) Used in a name of output files
 
-    output_Jx_Jy      = false
+    output_Jx_Jy      = true
       ! logical: false (default)
     
     output_J          = true
       ! logical: true (default)
+
+    output_Bsim       = false
+      ! logical: false (default)
 
     output_dir        = './'
       ! char: './' (default)
@@ -93,6 +91,10 @@
 
     output_postfix_J  = '_J.dat'
       ! char: '_J.dat' (default)
+      ! The name of output file is prefix + postfix.
+
+    output_postfix_Bsim = '_Bsim.dat'
+      ! char: '_Bsim.dat' (default)
       ! The name of output file is prefix + postfix.
 
     separator         = ',\t'
