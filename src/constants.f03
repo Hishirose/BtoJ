@@ -9,7 +9,7 @@ module constants
   implicit none
 
   character(4), public, parameter :: name_of_program = 'BtoJ.x'
-  character(4), public, parameter :: version = '1.01'
+  character(4), public, parameter :: version = '1.1'
   integer,      public, parameter :: sp = selected_real_kind(6, 30)
   integer,      public, parameter :: dp = selected_real_kind(14, 200)
   integer,      public, parameter :: i1b = selected_int_kind(2)

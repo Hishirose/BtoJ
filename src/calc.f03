@@ -13,6 +13,11 @@ module calc
   public  :: calc_invG
   private :: obtain_Mz_by_inverse_mini
   private :: diff_2d
+  public  :: calc_B_from_Jx_Jy
+  public  :: calc_correction_factor
+  private :: evaluate_difference
+  private :: renew_factor
+  private :: renew_offset
 
   contains
 
@@ -31,7 +36,7 @@ module calc
     allocate(y_interp(ny_interp))
     forall(i = 1 : ny_interp) y_interp(i) = (i - 0) * y_interval_interp
 
-    allocate(Bmap_interp(ny_interp, nx), Jx(ny_interp, nx), Jy(ny_interp, nx), J_tot(ny_interp, nx))
+    allocate(Bmap_interp(ny_interp, nx))
     allocate(B1d(ny), B1d_interp(ny_interp))
 
     !$omp parallel do private(i, B1d, B1d_interp), shared(nx, Bmap, Bmap_interp, y, y_interp)
@@ -44,33 +49,35 @@ module calc
 
   end subroutine interpolate_B_along_y
 
-  subroutine obtain_Jx_Jy_by_inverse()
+  subroutine obtain_Jx_Jy_by_inverse(dx, dy, Bmap)
     use constants, only : stdout
-    use io_data, only   : n_overlap, Bmap_interp, Jx, Jy, sc_thickness, y_interval_interp, &
-                        & x_interval, verbose, external_field, f_d_factor
+    use io_data, only   : n_overlap, Jx, Jy, sc_thickness, verbose, f_d_factor, factor
     use algebra, only   : fermi_dirac
     implicit none
 
+    real(dp), intent(in)  :: Bmap(:, :)
+    real(dp), intent(in)  :: dx, dy
     integer(i4b)          :: ny, nx, n
     real(dp), allocatable :: Mz_block(:, :, :), Mz(:, :)
     integer(i4b)          :: i, j, step
     real(dp)              :: inv_sc_thickness
 
-    ny = ubound(Bmap_interp, 1)
-    nx = ubound(Bmap_interp, 2)
+    ny = ubound(Bmap, 1)
+    nx = ubound(Bmap, 2)
     step = ny - n_overlap
     n = ceiling(dble(nx - n_overlap) / step)
-    allocate(Mz_block(ny, ny, n), Mz(ny, nx))
-
-    Bmap_interp = Bmap_interp - external_field
+    if (allocated(Mz_block)) deallocate(Mz_block)
+    if (allocated(Mz)) deallocate(Mz)
+    if (allocated(Jx)) deallocate(Jx, Jy)
+    allocate(Mz_block(ny, ny, n), Mz(ny, nx), Jx(ny, nx), Jy(ny, nx))
 
     if (verbose > 1) write(stdout, '(6x, "allocation is done")'); flush(stdout)
-    !$omp parallel do private(i), shared(ny, step, Bmap_interp, Mz_block)
+    !$omp parallel do private(i), shared(ny, step, Bmap, Mz_block)
     do i = 1, n - 1
-      call obtain_Mz_by_inverse_mini(Bmap_interp(1:ny, (i - 1) * step + 1: (i - 1) * step + ny), Mz_block(:, :, i))
+      call obtain_Mz_by_inverse_mini(Bmap(1:ny, (i - 1) * step + 1: (i - 1) * step + ny), Mz_block(:, :, i))
     end do
     !$omp end parallel do
-    call obtain_Mz_by_inverse_mini(Bmap_interp(1:ny, nx - ny + 1: nx), Mz_block(:, :, n))
+    call obtain_Mz_by_inverse_mini(Bmap(1:ny, nx - ny + 1: nx), Mz_block(:, :, n))
     if (verbose > 1) write(stdout, '(6x, "calculation of Mz is done")'); flush(stdout)
 
     ! Connect calculated Jx,Jy blocks
@@ -96,41 +103,47 @@ module calc
     if (verbose > 1) write(stdout, '(6x, "connection of blocks (4th step) is done")'); flush(stdout)
 
     ! Calculate Jx, Jy from Mz
-!    inv_sc_thickness = 1 / sc_thickness * 1e3
-    forall(i = 1:ny, j = 1:nx) Jx(i, j) = diff_2d(Mz, 1, x_interval, y_interval_interp, j, i) ! * inv_sc_thickness
-    forall(i = 1:ny, j = 1:nx) Jy(i, j) = -diff_2d(Mz, 2, x_interval, y_interval_interp, j, i) ! * inv_sc_thickness
+    forall(i = 1:ny, j = 1:nx) Jx(i, j) =  diff_2d(Mz, 1, dx, dy, j, i) * factor
+    forall(i = 1:ny, j = 1:nx) Jy(i, j) = -diff_2d(Mz, 2, dx, dy, j, i) * factor
 
-! Jx = Mz
   end subroutine obtain_Jx_Jy_by_inverse
 
   subroutine calc_J_tot()
     use io_data, only : J_tot, Jx, Jy
     implicit none
+    integer(i4b)          :: ny, nx
+
+    ny = ubound(Jx, 1)
+    nx = ubound(Jx, 2)
+    allocate(J_tot(ny, nx))
 
     J_tot(:, :) = sqrt(Jx(:, :)**2 + Jy(:, :)**2)
   end subroutine calc_J_tot
 
-  subroutine calc_invG()
-    use io_data, only : dz, y_interval_interp, x_interval, invG, Bmap_interp
+  subroutine calc_invG(dx, dy, Bmap)
+    use io_data, only : dz, invG
     use algebra, only : mat_inv
     implicit none
 
+    real(dp), intent(in)  :: Bmap(:, :)
+    real(dp), intent(in)  :: dx, dy
     integer(i4b)          :: n
     integer(i4b)          :: i, j, k, l
     real(dp), allocatable :: G(:, :)
     real(dp)              :: r, dxy
 
-    n = ubound(Bmap_interp, 1)
+    n = ubound(Bmap, 1)
+    if (allocated(G)) deallocate(G)
     allocate(G(n * n, n * n), invG(n * n, n * n))
 
     ! B(y, x)
-    dxy = x_interval * y_interval_interp
-    !$omp parallel do private(i, j, k, l, r), shared(n, dz, dxy, x_interval, y_interval_interp, G)
+    dxy = dx * dy
+    !$omp parallel do private(i, j, k, l, r), shared(n, dz, dxy, dx, dy, G)
     do i = 1, n
       do j = 0, n - 1
         do k = 1, n
           do l = 0, n - 1
-            r = sqrt(((i - k) * x_interval)**2 + ((j - l) * y_interval_interp)**2 + dz**2)
+            r = sqrt(((i - k) * dx)**2 + ((j - l) * dy)**2 + dz**2)
             G(i + j * n, k + l * n) = 1.0e-7 * (3.0d0 * dz**2 - r**2) / (r**5) * dxy
           end do
         end do
@@ -187,6 +200,146 @@ pure function diff_2d(map, d, dx, dy, px, py) result(slope)
       end if
     end if
   end function diff_2d
+
+  subroutine calc_B_from_Jx_Jy(dx, dy)
+    use io_data, only : Jx, Jy, dz, Bmap_sim
+    implicit none
+
+    real(dp), intent(in) :: dx, dy
+    integer(i4b)         :: nx, ny, i, j, k, l
+    real(dp)             :: dxy, dz2
+    
+    ny = ubound(Jx, 1)
+    nx = ubound(Jx, 2)
+    if (allocated(Bmap_sim)) deallocate(Bmap_sim)
+    allocate(Bmap_sim(ny, nx))
+    Bmap_sim = 0.0d0
+    dxy = dx * dy
+    dz2 = dz * dz
+
+    !$omp parallel do private(i, j, k, l), shared(nx, ny, dx, dy, dxy, dz2, Jx, Jy, Bmap_sim)
+    do i = 1, ny
+      do j = 1, nx
+        do k = 1, ny
+          do l = max(1, j - ny), min(nx, j + ny)
+            Bmap_sim(i, j) = Bmap_sim(i, j) + &
+                           & 1.0e-7 * (Jx(k, l) * ((i - k) * dy) - Jy(k, l) * ((j - l) * dx)) / &
+                           & sqrt(((j - l) * dx)**2 + ((i - k) * dy)**2 + dz2)**3 * dxy
+          end do
+        end do
+      end do
+    end do
+    !$omp end parallel do
+
+  end subroutine calc_B_from_Jx_Jy
+
+  subroutine calc_correction_factor(dx, dy, Bmap, factor, offset, diff)
+    use io_data, only : Jx, Jy, Bmap_sim, invG
+    implicit none
+
+    real(dp), intent(in)  :: dx, dy
+    real(dp), intent(in)  :: Bmap(:, :)
+    real(dp), intent(out) :: factor, offset, diff
+    integer(i4b)          :: nx, ny, i
+    real(dp), allocatable :: Bmap_diff(:, :)
+
+    ny = ubound(Bmap, 1)
+    nx = ubound(Bmap, 2)
+    allocate(Bmap_diff(ny, nx))
+    factor = 1.0d0
+
+    ! Calculate Jx, Jy, and Bz using non-interpolated Bmap
+    call calc_invG(dx, dy, Bmap)
+    call obtain_Jx_Jy_by_inverse(dx, dy, Bmap)
+    call calc_B_from_Jx_Jy(dx, dy)
+
+    ! Give initial values
+    Bmap_diff = Bmap(:, :) - Bmap_sim(:, :)
+    offset = sum(Bmap_diff) / (nx * ny)
+
+    ! Get better values
+    do i = 1, 20
+      call renew_factor(Bmap, Bmap_sim, factor, offset)
+      call renew_offset(Bmap, Bmap_sim, factor, offset)
+    end do
+
+    Bmap_diff = abs(Bmap(:, :) / (Bmap_sim(:, :) * factor + offset))
+    diff = sum(Bmap_diff) / dble(nx * ny)
+
+    deallocate(Jx, Jy, Bmap_sim, invG)
+  end subroutine calc_correction_factor
+
+  function evaluate_difference(Bmap, Bmap_sim, factor, offset) result(diff)
+    implicit none
+    
+    real(dp), intent(in)  :: Bmap(:, :), Bmap_sim(:, :)
+    real(dp), intent(in)  :: factor, offset
+    real(dp)              :: diff
+    integer(i4b)          :: nx, ny
+    real(dp), allocatable :: Bmap_diff(:, :)
+
+    ny = ubound(Bmap, 1)
+    nx = ubound(Bmap, 2)
+    allocate(Bmap_diff(ny, nx))
+
+    Bmap_diff = abs(Bmap(:, :) - (Bmap_sim(:, :) * factor + offset))
+    diff = sum(Bmap_diff)
+  end function evaluate_difference
+
+  subroutine renew_factor(Bmap, Bmap_sim, factor, offset)
+    implicit none
+
+    real(dp), intent(in)    :: Bmap(:, :), Bmap_sim(:, :)
+    real(dp), intent(inout) :: factor
+    real(dp), intent(in)    :: offset
+    real(dp)                :: diff0, diff_new, step
+    integer(i4b)            :: i
+
+    diff0 = evaluate_difference(Bmap, Bmap_sim, factor, offset)
+    step = 1.0d0
+    do i = 1, 10
+      plus: do
+        diff_new = evaluate_difference(Bmap, Bmap_sim, factor + step, offset)
+        if (diff_new < diff0) then
+          diff0 = diff_new
+          factor = factor + step
+          cycle plus
+        end if
+        exit plus
+      end do plus
+
+      minus: do
+        diff_new = evaluate_difference(Bmap, Bmap_sim, factor - step, offset)
+        if (diff_new < diff0) then
+          diff0 = diff_new
+          factor = factor - step
+          cycle minus
+        end if
+        exit minus
+      end do minus
+
+      step = step / 10.0d0
+    end do
+
+  end subroutine renew_factor
+
+  subroutine renew_offset(Bmap, Bmap_sim, factor, offset)
+    implicit none
+
+    real(dp), intent(in)    :: Bmap(:, :), Bmap_sim(:, :)
+    real(dp), intent(inout) :: offset
+    real(dp), intent(in)    :: factor
+    integer(i4b)            :: nx, ny
+    real(dp), allocatable   :: Bmap_diff(:, :)
+
+    ny = ubound(Bmap, 1)
+    nx = ubound(Bmap, 2)
+    allocate(Bmap_diff(ny, nx))
+
+    Bmap_diff = Bmap(:, :) - (Bmap_sim(:, :) * factor + offset)
+    offset = offset + sum(Bmap_diff) / dble(nx * ny)
+
+  end subroutine renew_offset
 
 end module calc
 

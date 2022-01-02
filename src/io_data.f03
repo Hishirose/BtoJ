@@ -26,7 +26,6 @@ module io_data
   real(dp),                public, save :: y_interval_interp
   integer(i4b),            public, save :: n_overlap
   real(dp),                public, save :: f_d_factor
-  real(dp),                public, save :: external_field
 
   ! -----------------------------------------
   !  Output configuration
@@ -34,16 +33,19 @@ module io_data
   character(len = maxlen), public, save :: prefix
   logical,                 public, save :: output_Jx_Jy
   logical,                 public, save :: output_J
+  logical,                 public, save :: output_Bsim
   character(len = maxlen), public, save :: output_dir
   character(len = maxlen), public, save :: postfix_Jx
   character(len = maxlen), public, save :: postfix_Jy
   character(len = maxlen), public, save :: postfix_J
+  character(len = maxlen), public, save :: postfix_Bsim
   character(len = maxlen), public, save :: separator
 
   ! -----------------------------------------
   !  Data
   ! -----------------------------------------
   real(dp), allocatable,   public, save :: Bmap(:,:)
+  real(dp), allocatable,   public, save :: Bmap_sim(:,:)
   real(dp), allocatable,   public, save :: xpos(:)
   real(dp),                public, save :: x_interval
 
@@ -52,6 +54,8 @@ module io_data
   real(dp), allocatable,   public, save :: Jy(:,:)
   real(dp), allocatable,   public, save :: J_tot(:,:)
   real(dp), allocatable,   public, save :: invG(:, :)
+  real(dp),                public, save :: factor
+  real(dp),                public, save :: offset
 
   public  :: read_config
   public  :: load_config_text_into_array
@@ -120,10 +124,6 @@ contains
     call read_keyword_var('f_d_factor', found, rvar = f_d_factor)
     call write_keyword_var('f_d_factor', found, rvar = f_d_factor)
 
-    external_field = 0.00d0 ! T
-    call read_keyword_var('external_field', found, rvar = external_field)
-    call write_keyword_var('external_field', found, rvar = external_field, comment = ' ! T')
-
   ! -----------------------------------------
   !  Output configuration
   ! -----------------------------------------
@@ -139,6 +139,10 @@ contains
     output_J = .false.
     call read_keyword_var('output_j', found, lvar = output_J)
     call write_keyword_var('output_J', found, lvar = output_J)
+
+    output_Bsim = .false.
+    call read_keyword_var('output_bsim', found, lvar = output_Bsim)
+    call write_keyword_var('output_Bsim', found, lvar = output_Bsim)
 
     output_dir = './'
     call read_keyword_var('output_dir', found, cvar = output_dir)
@@ -156,6 +160,10 @@ contains
     postfix_J = '_J.dat'
     call read_keyword_var('output_postfix_j', found, cvar = postfix_J)
     call write_keyword_var('output_postfix_J', found, cvar = postfix_J)
+
+    postfix_Bsim = '_Bsim.dat'
+    call read_keyword_var('output_postfix_bsim', found, cvar = postfix_Bsim)
+    call write_keyword_var('output_postfix_Bsim', found, cvar = postfix_Bsim)
 
     separator = ',\t'
     call read_keyword_var('separator', found, cvar = separator)
@@ -569,14 +577,15 @@ contains
     use utils,     only : new_unit, close_unit, report_error, tailless
     implicit none
 
-    character(:), allocatable :: file_path_Jx, file_path_Jy, file_path_J
+    character(:), allocatable :: file_path_Jx, file_path_Jy, file_path_J, file_path_Bsim
     integer(i4b)              :: nx, ny
-    integer(i4b)              :: unit_Jx, unit_Jy, unit_J, io_error, i, j
+    integer(i4b)              :: unit_Jx, unit_Jy, unit_J, unit_Bsim, io_error, i, j
 
     nx = ubound(J_tot, 2); ny = ubound(J_tot, 1)
-    file_path_Jx = trim(output_dir) // trim(prefix) // trim(postfix_Jx)
-    file_path_Jy = trim(output_dir) // trim(prefix) // trim(postfix_Jy)
-    file_path_J  = trim(output_dir) // trim(prefix) // trim(postfix_J)
+    file_path_Jx   = trim(output_dir) // trim(prefix) // trim(postfix_Jx)
+    file_path_Jy   = trim(output_dir) // trim(prefix) // trim(postfix_Jy)
+    file_path_J    = trim(output_dir) // trim(prefix) // trim(postfix_J)
+    file_path_Bsim = trim(output_dir) // trim(prefix) // trim(postfix_Bsim)
 
     if (output_Jx_Jy) then
       unit_Jx = new_unit()
@@ -621,6 +630,21 @@ contains
       call close_unit(unit_J)
     end if
 
+    if (output_Bsim) then
+      unit_Bsim = new_unit()
+      open(unit = unit_Bsim, file = trim(file_path_Bsim), &
+        & form = 'formatted', status = 'replace', iostat = io_error)
+      if (io_error /= 0) call report_error('write_data', &
+                         & 'Failed to open ''' // trim(file_path_Bsim) // '''.')
+      do i = 1, nx
+        do j = 1, ny - 1
+          write(unit_Bsim, '(es21.13, a)', advance="no") Bmap_sim(j, i), tailless(separator)
+        end do
+        write(unit_Bsim, '(es21.13)') Bmap_sim(ny, i)
+      end do
+      call close_unit(unit_Bsim)
+    end if
+    
   end subroutine write_data
 
 end module io_data
