@@ -26,6 +26,7 @@ module io_data
   real(dp),                public, save :: y_interval_interp
   integer(i4b),            public, save :: n_overlap
   real(dp),                public, save :: f_d_factor
+  integer(i4b),            public, save :: outside_points
 
   ! -----------------------------------------
   !  Output configuration
@@ -123,6 +124,10 @@ contains
     f_d_factor = 20.0d0
     call read_keyword_var('f_d_factor', found, rvar = f_d_factor)
     call write_keyword_var('f_d_factor', found, rvar = f_d_factor)
+
+    outside_points = 3
+    call read_keyword_var('outside_points', found, ivar = outside_points)
+    call write_keyword_var('outside_points', found, ivar = outside_points)
 
   ! -----------------------------------------
   !  Output configuration
@@ -594,10 +599,10 @@ contains
       if (io_error /= 0) call report_error('write_data', &
                          & 'Failed to open ''' // trim(file_path_Jx) // '''.')
       do i = 1, nx
-        do j = 1, ny - 1
+        do j = 1 + outside_points, ny - 1 - outside_points
           write(unit_Jx, '(es21.13, a)', advance="no") Jx(j, i), tailless(separator)
         end do
-        write(unit_Jx, '(es21.13)') Jx(ny, i)
+        write(unit_Jx, '(es21.13)') Jx(ny - outside_points, i)
       end do
       call close_unit(unit_Jx)
 
@@ -607,10 +612,10 @@ contains
       if (io_error /= 0) call report_error('write_data', &
                          & 'Failed to open ''' // trim(file_path_Jy) // '''.')
       do i = 1, nx
-        do j = 1, ny - 1
+        do j = 1 + outside_points, ny - 1 - outside_points
           write(unit_Jy, '(es21.13, a)', advance="no") Jy(j, i), tailless(separator)
         end do
-        write(unit_Jy, '(es21.13)') Jy(ny, i)
+        write(unit_Jy, '(es21.13)') Jy(ny - outside_points, i)
       end do
       call close_unit(unit_Jy)
     end if
@@ -622,10 +627,10 @@ contains
       if (io_error /= 0) call report_error('write_data', &
                          & 'Failed to open ''' // trim(file_path_J) // '''.')
       do i = 1, nx
-        do j = 1, ny - 1
+        do j = 1 + outside_points, ny - 1 - outside_points
           write(unit_J, '(es21.13, a)', advance="no") J_tot(j, i), tailless(separator)
         end do
-        write(unit_J, '(es21.13)') J_tot(ny, i)
+        write(unit_J, '(es21.13)') J_tot(ny - outside_points, i)
       end do
       call close_unit(unit_J)
     end if
@@ -637,10 +642,10 @@ contains
       if (io_error /= 0) call report_error('write_data', &
                          & 'Failed to open ''' // trim(file_path_Bsim) // '''.')
       do i = 1, nx
-        do j = 1, ny - 1
+        do j = 1 + outside_points, ny - 1 - outside_points
           write(unit_Bsim, '(es21.13, a)', advance="no") Bmap_sim(j, i), tailless(separator)
         end do
-        write(unit_Bsim, '(es21.13)') Bmap_sim(ny, i)
+        write(unit_Bsim, '(es21.13)') Bmap_sim(ny - outside_points, i)
       end do
       call close_unit(unit_Bsim)
     end if

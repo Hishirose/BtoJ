@@ -22,7 +22,7 @@ module calc
   contains
 
   subroutine interpolate_B_along_y()
-    use io_data, only : Bmap, y_interval, y_interval_interp, Bmap_interp, Jx, Jy, J_tot
+    use io_data, only : Bmap, y_interval, y_interval_interp, Bmap_interp, Jx, Jy, J_tot, outside_points
     use algebra, only : interpolate1D
 
     integer(i4b)             :: i, nx, ny, ny_interp
@@ -31,10 +31,10 @@ module calc
     ny = ubound(Bmap, 1)
     nx = ubound(Bmap, 2)
     allocate(y(ny))
-    forall(i = 1 : ny) y(i) = (i - 0) * y_interval
-    ny_interp = nint(y(ny) / y_interval_interp) + 1
+    forall(i = 1 : ny) y(i) = (i - 1) * y_interval
+    ny_interp = nint(y(ny) / y_interval_interp) + 1 + outside_points * 2
     allocate(y_interp(ny_interp))
-    forall(i = 1 : ny_interp) y_interp(i) = (i - 0) * y_interval_interp
+    forall(i = 1 : ny_interp) y_interp(i) = (i - 1 - outside_points) * y_interval_interp
 
     allocate(Bmap_interp(ny_interp, nx))
     allocate(B1d(ny), B1d_interp(ny_interp))
@@ -51,7 +51,7 @@ module calc
 
   subroutine obtain_Jx_Jy_by_inverse(dx, dy, Bmap)
     use constants, only : stdout
-    use io_data, only   : n_overlap, Jx, Jy, sc_thickness, verbose, f_d_factor, factor
+    use io_data, only   : n_overlap, Jx, Jy, sc_thickness, verbose, f_d_factor
     use algebra, only   : fermi_dirac
     implicit none
 
@@ -66,9 +66,6 @@ module calc
     nx = ubound(Bmap, 2)
     step = ny - n_overlap
     n = ceiling(dble(nx - n_overlap) / step)
-    if (allocated(Mz_block)) deallocate(Mz_block)
-    if (allocated(Mz)) deallocate(Mz)
-    if (allocated(Jx)) deallocate(Jx, Jy)
     allocate(Mz_block(ny, ny, n), Mz(ny, nx), Jx(ny, nx), Jy(ny, nx))
 
     if (verbose > 1) write(stdout, '(6x, "allocation is done")'); flush(stdout)
@@ -103,8 +100,8 @@ module calc
     if (verbose > 1) write(stdout, '(6x, "connection of blocks (4th step) is done")'); flush(stdout)
 
     ! Calculate Jx, Jy from Mz
-    forall(i = 1:ny, j = 1:nx) Jx(i, j) =  diff_2d(Mz, 1, dx, dy, j, i) * factor
-    forall(i = 1:ny, j = 1:nx) Jy(i, j) = -diff_2d(Mz, 2, dx, dy, j, i) * factor
+    forall(i = 1:ny, j = 1:nx) Jx(i, j) =  diff_2d(Mz, 1, dx, dy, j, i)
+    forall(i = 1:ny, j = 1:nx) Jy(i, j) = -diff_2d(Mz, 2, dx, dy, j, i)
 
   end subroutine obtain_Jx_Jy_by_inverse
 
@@ -133,7 +130,6 @@ module calc
     real(dp)              :: r, dxy
 
     n = ubound(Bmap, 1)
-    if (allocated(G)) deallocate(G)
     allocate(G(n * n, n * n), invG(n * n, n * n))
 
     ! B(y, x)
@@ -211,7 +207,6 @@ pure function diff_2d(map, d, dx, dy, px, py) result(slope)
     
     ny = ubound(Jx, 1)
     nx = ubound(Jx, 2)
-    if (allocated(Bmap_sim)) deallocate(Bmap_sim)
     allocate(Bmap_sim(ny, nx))
     Bmap_sim = 0.0d0
     dxy = dx * dy
@@ -233,40 +228,39 @@ pure function diff_2d(map, d, dx, dy, px, py) result(slope)
 
   end subroutine calc_B_from_Jx_Jy
 
-  subroutine calc_correction_factor(dx, dy, Bmap, factor, offset, diff)
-    use io_data, only : Jx, Jy, Bmap_sim, invG
+  subroutine calc_correction_factor(dx, dy, factor, offset, diff)
+    use io_data, only : Jx, Jy, J_tot, Bmap_sim, invG, Bmap_interp
     implicit none
 
     real(dp), intent(in)  :: dx, dy
-    real(dp), intent(in)  :: Bmap(:, :)
     real(dp), intent(out) :: factor, offset, diff
     integer(i4b)          :: nx, ny, i
     real(dp), allocatable :: Bmap_diff(:, :)
 
-    ny = ubound(Bmap, 1)
-    nx = ubound(Bmap, 2)
+    ny = ubound(Bmap_interp, 1)
+    nx = ubound(Bmap_interp, 2)
     allocate(Bmap_diff(ny, nx))
-    factor = 1.0d0
-
-    ! Calculate Jx, Jy, and Bz using non-interpolated Bmap
-    call calc_invG(dx, dy, Bmap)
-    call obtain_Jx_Jy_by_inverse(dx, dy, Bmap)
-    call calc_B_from_Jx_Jy(dx, dy)
 
     ! Give initial values
-    Bmap_diff = Bmap(:, :) - Bmap_sim(:, :)
+    Bmap_diff = Bmap_interp(:, :) - Bmap_sim(:, :)
+    factor = 1.0d0
     offset = sum(Bmap_diff) / (nx * ny)
 
     ! Get better values
     do i = 1, 20
-      call renew_factor(Bmap, Bmap_sim, factor, offset)
-      call renew_offset(Bmap, Bmap_sim, factor, offset)
+      call renew_factor(Bmap_interp, Bmap_sim, factor, offset)
+      call renew_offset(Bmap_interp, Bmap_sim, factor, offset)
     end do
 
-    Bmap_diff = abs(Bmap(:, :) / (Bmap_sim(:, :) * factor + offset))
+    Bmap_diff = abs(Bmap_interp(:, :) / (Bmap_sim(:, :) * factor + offset))
     diff = sum(Bmap_diff) / dble(nx * ny)
 
-    deallocate(Jx, Jy, Bmap_sim, invG)
+    ! correct magnitude by using the obtained factor and offset
+    Bmap_sim = Bmap_sim * factor + offset
+    Jx = Jx * factor
+    Jy = Jy * factor
+    J_tot = J_tot * factor
+
   end subroutine calc_correction_factor
 
   function evaluate_difference(Bmap, Bmap_sim, factor, offset) result(diff)

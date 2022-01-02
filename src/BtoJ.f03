@@ -82,15 +82,6 @@ program BtoJ
   flush(stdout)
 
   call cpu_time(cpu_time1)
-  call calc_correction_factor(x_interval, y_interval, Bmap, factor, offset, mean_difference_factor)
-  call cpu_time(cpu_time2)
-  write(stdout, '(4x, "calculation of correction factor is done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time1))
-  write(stdout, '(4x, "estimated_ext_field", 1x, "= ", g0, " ! T")') offset
-  write(stdout, '(4x, "Bz/Bz_simulated", 5x, "= ", g0)') mean_difference_factor
-  write(stdout, '(4x, "correction_factor", 3x, "= ", g0)') factor
-  flush(stdout)
-
-  call cpu_time(cpu_time1)
   call calc_invG(x_interval, y_interval_interp, Bmap_interp)
   call cpu_time(cpu_time2)
   write(stdout, '(4x, "calculation of invG is done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time1))
@@ -108,13 +99,20 @@ program BtoJ
   write(stdout, '(4x, "calculation of Jtot is done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time1))
   flush(stdout)
 
-  if (output_Bsim) then
-    call cpu_time(cpu_time1)
-    call calc_B_from_Jx_Jy(x_interval, y_interval_interp)
-    call cpu_time(cpu_time2)
-    write(stdout, '(4x, "calculation of Bz_simulated is done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time1))
-    flush(stdout)
-  end if
+  call cpu_time(cpu_time1)
+  call calc_B_from_Jx_Jy(x_interval, y_interval_interp)
+  call cpu_time(cpu_time2)
+  write(stdout, '(4x, "calculation of Bz_simulated is done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time1))
+  flush(stdout)
+
+  call cpu_time(cpu_time1)
+  call calc_correction_factor(x_interval, y_interval_interp, factor, offset, mean_difference_factor)
+  call cpu_time(cpu_time2)
+  write(stdout, '(4x, "calculation of correction factor is done (", a, ")")') trim(secs2str(cpu_time2 - cpu_time1))
+  write(stdout, '(4x, "estimated_ext_field", 1x, "= ", g0, " ! T")') offset
+  write(stdout, '(4x, "Bz/Bz_simulated", 5x, "= ", g0)') mean_difference_factor
+  write(stdout, '(4x, "correction_factor", 3x, "= ", g0)') factor
+  flush(stdout)
 
   call cpu_time(cpu_time1)
   call write_data()
