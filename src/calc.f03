@@ -64,41 +64,41 @@ module calc
 
     Bmap_interp = Bmap_interp - external_field
 
-    if (verbose > 1) write(stdout, '(4x, "allocation is done")'); flush(stdout)
+    if (verbose > 1) write(stdout, '(6x, "allocation is done")'); flush(stdout)
     !$omp parallel do private(i), shared(ny, step, Bmap_interp, Mz_block)
     do i = 1, n - 1
       call obtain_Mz_by_inverse_mini(Bmap_interp(1:ny, (i - 1) * step + 1: (i - 1) * step + ny), Mz_block(:, :, i))
     end do
     !$omp end parallel do
     call obtain_Mz_by_inverse_mini(Bmap_interp(1:ny, nx - ny + 1: nx), Mz_block(:, :, n))
-    if (verbose > 1) write(stdout, '(4x, "calculation of Mz is done")'); flush(stdout)
+    if (verbose > 1) write(stdout, '(6x, "calculation of Mz is done")'); flush(stdout)
 
     ! Connect calculated Jx,Jy blocks
     Mz(:, 1:n_overlap) = Mz_block(:, 1:n_overlap, 1)
     Mz(:, nx - ny + 1:nx) = Mz_block(:, :, n)
-    if (verbose > 1) write(stdout, '(4x, "connection of blocks (1st step) is done")'); flush(stdout)
+    if (verbose > 1) write(stdout, '(6x, "connection of blocks (1st step) is done")'); flush(stdout)
     do i = 1, n - 1
       Mz(:, n_overlap + (i - 1) * step + 1 : i * step) = Mz_block(:, n_overlap + 1: ny - n_overlap, i)
     end do
-    if (verbose > 1) write(stdout, '(4x, "connection of blocks (2nd step) is done")'); flush(stdout)
+    if (verbose > 1) write(stdout, '(6x, "connection of blocks (2nd step) is done")'); flush(stdout)
     do i = 1, n - 2
       forall(j = 1:n_overlap) Mz(:, i * step + j) = &
           & (Mz_block(:, ny - n_overlap + j, i) * fermi_dirac((j - 1) / dble(n_overlap - 1), beta = f_d_factor) + &
           &  Mz_block(:, j, i + 1) * fermi_dirac((n_overlap - j) / dble(n_overlap - 1), beta = f_d_factor))
     end do
-    if (verbose > 1) write(stdout, '(4x, "connection of blocks (3rd step) is done")'); flush(stdout)
+    if (verbose > 1) write(stdout, '(6x, "connection of blocks (3rd step) is done")'); flush(stdout)
     do i = 1, n_overlap
       Mz(:, (n - 1) * step + i) = &
         & (Mz_block(:, ny - n_overlap + i, n - 1) * fermi_dirac((i - 1) / dble(n_overlap - 1), beta = f_d_factor) + &
         &  Mz_block(:, ((n - 1) * step + i) - (nx - ny), n) &
         &* fermi_dirac((n_overlap - i) / dble(n_overlap - 1), beta = f_d_factor))
     end do
-    if (verbose > 1) write(stdout, '(4x, "connection of blocks (4th step) is done")'); flush(stdout)
+    if (verbose > 1) write(stdout, '(6x, "connection of blocks (4th step) is done")'); flush(stdout)
 
     ! Calculate Jx, Jy from Mz
-    inv_sc_thickness = 1 / sc_thickness * 1e3
-    forall(i = 1:ny, j = 1:nx) Jx(i, j) = diff_2d(Mz, 1, x_interval, y_interval_interp, j, i) * inv_sc_thickness
-    forall(i = 1:ny, j = 1:nx) Jy(i, j) = -diff_2d(Mz, 2, x_interval, y_interval_interp, j, i) * inv_sc_thickness
+!    inv_sc_thickness = 1 / sc_thickness * 1e3
+    forall(i = 1:ny, j = 1:nx) Jx(i, j) = diff_2d(Mz, 1, x_interval, y_interval_interp, j, i) ! * inv_sc_thickness
+    forall(i = 1:ny, j = 1:nx) Jy(i, j) = -diff_2d(Mz, 2, x_interval, y_interval_interp, j, i) ! * inv_sc_thickness
 
 ! Jx = Mz
   end subroutine obtain_Jx_Jy_by_inverse
@@ -111,20 +111,21 @@ module calc
   end subroutine calc_J_tot
 
   subroutine calc_invG()
-    use io_data, only : sc_thickness, dz, y_interval_interp, x_interval, invG, Bmap_interp
+    use io_data, only : dz, y_interval_interp, x_interval, invG, Bmap_interp
     use algebra, only : mat_inv
     implicit none
 
     integer(i4b)          :: n
     integer(i4b)          :: i, j, k, l
     real(dp), allocatable :: G(:, :)
-    real(dp)              :: r, dxy, inv_sc_thickness
+    real(dp)              :: r, dxy
 
     n = ubound(Bmap_interp, 1)
     allocate(G(n * n, n * n), invG(n * n, n * n))
 
     ! B(y, x)
     dxy = x_interval * y_interval_interp
+    !$omp parallel do private(i, j, k, l, r), shared(n, dz, dxy, x_interval, y_interval_interp, G)
     do i = 1, n
       do j = 0, n - 1
         do k = 1, n
@@ -135,6 +136,7 @@ module calc
         end do
       end do
     end do
+    !$omp end parallel do
 
     invG = mat_inv(G)
   end subroutine calc_invG
@@ -166,8 +168,8 @@ pure function diff_2d(map, d, dx, dy, px, py) result(slope)
     integer(i4b)             :: n
 
 
+    n = ubound(map, d)
     if (d == 1) then ! y
-      n = ubound(map, 1)
       if (py > 1 .and. py < n) then
         slope = (map(py + 1, px) - map(py - 1, px)) / (2.0d0 * dy)
       else if (py > 1) then
@@ -176,7 +178,6 @@ pure function diff_2d(map, d, dx, dy, px, py) result(slope)
         slope = (map(py + 1, px) - map(py, px)) / dy
       end if
     else if (d == 2) then ! x
-      n = ubound(map, 2)
       if (px > 1 .and. px < n) then
         slope = (map(py, px + 1) - map(py, px - 1)) / (2.0d0 * dx)
       else if (px > 1) then

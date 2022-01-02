@@ -94,22 +94,22 @@ contains
   ! -----------------------------------------
     sc_thickness = 2
     call read_keyword_var('sc_thickness', found, rvar = sc_thickness)
-    call write_keyword_var('sc_thickness', found, rvar = sc_thickness)
+    call write_keyword_var('sc_thickness', found, rvar = sc_thickness, comment = ' ! micro meter')
     sc_thickness = sc_thickness * 0.000001
 
     dz = 2
     call read_keyword_var('dz', found, rvar = dz)
-    call write_keyword_var('dz', found, rvar = dz)
+    call write_keyword_var('dz', found, rvar = dz, comment = ' ! mm')
     dz = dz * 0.001d0 ! in units of m
 
     y_interval = 0.6d0
     call read_keyword_var('y_interval', found, rvar = y_interval)
-    call write_keyword_var('y_interval', found, rvar = y_interval)
+    call write_keyword_var('y_interval', found, rvar = y_interval, comment = ' ! mm')
     y_interval = y_interval * 0.001d0 ! in units of m
 
     y_interval_interp = 0.2d0
     call read_keyword_var('y_interval_interp', found, rvar = y_interval_interp)
-    call write_keyword_var('y_interval_interp', found, rvar = y_interval_interp)
+    call write_keyword_var('y_interval_interp', found, rvar = y_interval_interp, comment = ' ! mm')
     y_interval_interp = y_interval_interp * 0.001d0 ! in units of m
 
     n_overlap = 2
@@ -122,7 +122,7 @@ contains
 
     external_field = 0.00d0 ! T
     call read_keyword_var('external_field', found, rvar = external_field)
-    call write_keyword_var('external_field', found, rvar = external_field)
+    call write_keyword_var('external_field', found, rvar = external_field, comment = ' ! T')
 
   ! -----------------------------------------
   !  Output configuration
