@@ -63,6 +63,10 @@
       ! Factor of Fermi-Dirac function used in smoothly connecting adjacent blocks.
       ! real: 20.0(default)
 
+    outside_points    = 3
+      ! Number of points extrapolated outward from the edge along the y-axis.
+      ! integer: 3(default)
+
 ! -----------------------------------------
 !  Output configuration
 ! -----------------------------------------
