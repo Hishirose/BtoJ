@@ -67,6 +67,12 @@
       ! Number of points extrapolated outward from the edge along the y-axis.
       ! integer: 3(default)
 
+    use_correction_factor = true
+      ! Decide whether the magnitude of the current density should be multiplied
+      ! by a correction factor so that the magnetic field distribution
+      ! calculated backward by the Biot-Savart equation matches the observed value.
+      ! logical: true (default)
+    
 ! -----------------------------------------
 !  Output configuration
 ! -----------------------------------------
