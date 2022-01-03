@@ -27,6 +27,7 @@ module io_data
   integer(i4b),            public, save :: n_overlap
   real(dp),                public, save :: f_d_factor
   integer(i4b),            public, save :: outside_points
+  logical,                 public, save :: use_correction_factor
 
   ! -----------------------------------------
   !  Output configuration
@@ -128,6 +129,10 @@ contains
     outside_points = 3
     call read_keyword_var('outside_points', found, ivar = outside_points)
     call write_keyword_var('outside_points', found, ivar = outside_points)
+
+    use_correction_factor = .true.
+    call read_keyword_var('use_correction_factor', found, lvar = use_correction_factor)
+    call write_keyword_var('use_correction_factor', found, lvar = use_correction_factor)
 
   ! -----------------------------------------
   !  Output configuration

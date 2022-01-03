@@ -229,7 +229,7 @@ pure function diff_2d(map, d, dx, dy, px, py) result(slope)
   end subroutine calc_B_from_Jx_Jy
 
   subroutine calc_correction_factor(dx, dy, factor, offset, diff)
-    use io_data, only : Jx, Jy, J_tot, Bmap_sim, invG, Bmap_interp
+    use io_data, only : Jx, Jy, J_tot, Bmap_sim, invG, Bmap_interp, use_correction_factor
     implicit none
 
     real(dp), intent(in)  :: dx, dy
@@ -247,10 +247,12 @@ pure function diff_2d(map, d, dx, dy, px, py) result(slope)
     offset = sum(Bmap_diff) / (nx * ny)
 
     ! Get better values
-    do i = 1, 20
-      call renew_factor(Bmap_interp, Bmap_sim, factor, offset)
-      call renew_offset(Bmap_interp, Bmap_sim, factor, offset)
-    end do
+    if (use_correction_factor) then
+      do i = 1, 20
+        call renew_factor(Bmap_interp, Bmap_sim, factor, offset)
+        call renew_offset(Bmap_interp, Bmap_sim, factor, offset)
+      end do
+    end if
 
     Bmap_diff = abs(Bmap_interp(:, :) / (Bmap_sim(:, :) * factor + offset))
     diff = sum(Bmap_diff) / dble(nx * ny)
